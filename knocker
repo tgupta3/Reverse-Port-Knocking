@@ -1,0 +1,71 @@
+#!/usr/bin/python
+
+
+#This is my knocker
+
+import socket
+import logging
+import sys
+import argparse
+import knocker_def as k_def
+import struct
+
+parser=argparse.ArgumentParser(description="Knocker for CSC 574")
+parser.add_argument("conf_file",help="Configuration file",metavar="Configuration_file",default="dummy_conf")
+parser.add_argument("serverip",help="Ip Address of server",metavar="Ipaddress",default="dummy_ip")
+parser.add_argument("-v","--verbose",help="Increased output verbosity",action="store_true")
+parser.error=k_def.print_help
+
+args=parser.parse_args()
+if(k_def.error_check==True):
+	print "Usage: ./knocker [-h] [-v] Configuration_file Ipaddress"
+	print "Exiting"
+	sys.exit()
+
+if not args.verbose:
+	logging.disable(logging.CRITICAL)
+
+logger=logging.getLogger("Knocker")
+
+
+logger.setLevel(logging.DEBUG)
+ch=logging.StreamHandler()
+formatter=logging.Formatter("%(name)s - %(levelname)s - %(message)s")
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+logger.debug("Logging is On")
+
+
+conf_file=args.conf_file
+ipaddress=args.serverip
+print "Using Configuration File="+conf_file
+print "Server IP="+ipaddress
+
+
+try:
+	s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
+
+except socket.error, msg:
+	print "Unable to create Socket"+ str(msg)
+	sys.exit()
+
+
+
+source_ip="192.168.2.14"
+dest_ip=ipaddress
+
+try:
+	socket.inet_aton(dest_ip)
+except socket.error:
+	logger.debug("Destination IP="+dest_ip)
+	print "Please Check Ip address"
+	sys.exit()
+
+
+
+ip_header=k_def.make_ip_header(source_ip,dest_ip)
+tcp_header=k_def.make_tcp_header(source_ip,dest_ip,0,4567)
+
+packet=ip_header+tcp_header
+s.sendto(packet,(dest_ip,0))
+logger.debug("packet Sent")
