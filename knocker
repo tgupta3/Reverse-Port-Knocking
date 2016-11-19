@@ -9,6 +9,7 @@ import sys
 import argparse
 import knocker_def as k_def
 import struct
+import time
 
 parser=argparse.ArgumentParser(description="Knocker for CSC 574")
 parser.add_argument("conf_file",help="Configuration file",metavar="Configuration_file",default="dummy_conf")
@@ -44,12 +45,9 @@ print "Server IP="+ipaddress
 
 try:
 	s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_RAW)
-
 except socket.error, msg:
 	print "Unable to create Socket"+ str(msg)
 	sys.exit()
-
-
 
 source_ip="192.168.2.14"
 dest_ip=ipaddress
@@ -61,11 +59,33 @@ except socket.error:
 	print "Please Check Ip address"
 	sys.exit()
 
+try:
+	port_sequence=[lines.rstrip('\n') for lines in open(conf_file,"r")]
+except :
+	print "Couldn't Open file"
+	sys.exit()
 
+logger.debug("port_sequence="+str(port_sequence))
+seq_check=[port for port in port_sequence if not port.isdigit()]
+
+if  seq_check :
+	print "Error in port number"
+	sys.exit()
+
+range_check=[port for port in port_sequence if (int(port)<0 or int(port)>65535)]
+if range_check:
+	print "Check range of Port number"
+	sys.exit()
 
 ip_header=k_def.make_ip_header(source_ip,dest_ip)
-tcp_header=k_def.make_tcp_header(source_ip,dest_ip,0,4567)
+seq_no=2000
+for port in port_sequence:
 
-packet=ip_header+tcp_header
-s.sendto(packet,(dest_ip,0))
-logger.debug("packet Sent")
+	tcp_header=k_def.make_tcp_header(source_ip,dest_ip,seq_no,int(port))
+	packet=ip_header+tcp_header
+	s.sendto(packet,(dest_ip,0))
+	print "Packet Sent,Seq_No=%s , Port=%s" %(str(seq_no),port)
+	seq_no+=1
+	time.sleep(1)
+
+print "Knock Completed"
