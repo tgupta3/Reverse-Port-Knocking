@@ -47,7 +47,7 @@ def make_ip_header(src_ip,dest_ip):
 
 def make_tcp_header(src_ip,dest_ip,sqn,dest_port):
    logger=logging.getLogger("Knocker.make_tcp_header")
-   src_port=1234;
+   src_port=5423;
    ack=0;
    header_length=5
    reserved=0
