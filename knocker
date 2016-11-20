@@ -86,6 +86,6 @@ for port in port_sequence:
 	s.sendto(packet,(dest_ip,0))
 	print "Packet Sent,Seq_No=%s , Port=%s" %(str(seq_no),port)
 	seq_no+=1
-	time.sleep(1)
+	time.sleep(0.4)
 
 print "Knock Completed"

