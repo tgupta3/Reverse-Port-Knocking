@@ -82,8 +82,9 @@ while True:
 	tcp_packet=packet[0][20:40]
 	tcp_packet=struct.unpack('>HHLLHHHH' , tcp_packet)
 	ip_packet=struct.unpack('>BBHHHBBH4s4s',packet[0][0:20])
-	if(tcp_packet[0]==5423 and str(tcp_packet[1]) in port_sequence and tcp_packet[2]>=2000):
-		srcip_packet=socket.inet_ntoa(ip_packet[8])
+	srcip_packet=socket.inet_ntoa(ip_packet[8])
+	if(tcp_packet[0]==5423 and port_seq_dict[tcp_packet[2]]==tcp_packet[1]):
+		
 
 		if not first_packet:
 			srcip=socket.inet_ntoa(ip_packet[8])
@@ -112,9 +113,16 @@ while True:
 			logger.debug("Sorted Sequence"+str(sequence_sort))
 			if(sequence_sort==port_seq_dict):
 				print "Successfull Knock"
-				
 				break
-				
+
+	elif(first_packet and tcp_packet[0]==5423 and port_seq_dict[tcp_packet[2]]!=tcp_packet[1] and srcip==srcip_packet):
+		first_packet=False
+		srcip="455.455.455.455"
+		sequence_dict={}
+		sequence_sort={}
+		logger.debug("Sequence Reset")
+		logger.debug("recieved Sequence="+str(sequence_sort))
+
 if not url.startswith('http://'):
 	url='http://'+url
 

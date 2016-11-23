@@ -51,6 +51,7 @@ except socket.error, msg:
 	sys.exit()
 
 source_ip=socket.gethostbyname(socket.gethostname())
+#source_ip="192.168.2.8"
 dest_ip=ipaddress
 
 try:
