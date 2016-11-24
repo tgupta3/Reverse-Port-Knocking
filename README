@@ -1,0 +1,13 @@
+Name:- Tushar Gupta
+Unity ID:- tgupta3 
+Email:- tgupta3@ncsu.edu
+
+The program works by sending raw TCP Packets with the destination port number set to as that in sequence. The backdoor works by sniffing tcp packets, checking the destination port, and comparing it with the pre defined sequence.
+
+Knocker:-
+I have used a custom TCP packet and a IP packet. The IP packet source is set to the host IP while the destination is set to the IP of backdoor. The ttl is 64 while the identification if 4545, version beign 4 and header length being 5. Any remianing fields are set to zero, if they are required like the checksum and total header length, they are filled by the kernel itself. For the tcp header, i have set the syn flag to 1 and for each successive port number, i increment the sequence number by one before sending, starting from 20000. This helps in cases where the packets might come out of order at the backdoor side, even if they were sent at the same time. 
+
+Backdoor:-
+For the backdoor, i am sniffing all the tcp packets. I also have a dictionary set with keys as the sequence number starting from 2000 while the port configuration as the values. So a sequence of 45 23 67 89 looks like this {2000:45,2001:23,2002:67,2003:89} Whenever a tcp packet arrives, its source port number is checked (which has to be 5423) and it is ensured that the sequence number in in the range of 2000:2000+(no_of_ports_to_be_knocked) and also ensured that there is a correct value of port in the sequence number when compared with the original dictionary (mentioned above). If this is the first knock, its ip is noted so as to take into account that rest of the knocks come from the same ip only. In case of event when the source port is 5423 and the first packet has already arrived, and the ip also matches but the destiantion port or there is a mismatch in sequence number, the backdoor will reset the recieved sequence, so the knocker would have to try again.On a successfull knock, the url is fetch and the response is executed. 
+
+The backdoor, never listens on any port, all it does is sniff packets, match them to a particular requirement and fetch the url is there is successfull knock. Also, for each port in sequence only one packet is send by knocker. In case of any packet loss, the knocker would have to be re-run

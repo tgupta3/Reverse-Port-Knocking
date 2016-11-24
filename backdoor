@@ -83,7 +83,7 @@ while True:
 	tcp_packet=struct.unpack('>HHLLHHHH' , tcp_packet)
 	ip_packet=struct.unpack('>BBHHHBBH4s4s',packet[0][0:20])
 	srcip_packet=socket.inet_ntoa(ip_packet[8])
-	if(tcp_packet[0]==5423 and port_seq_dict[tcp_packet[2]]==tcp_packet[1]):
+	if(tcp_packet[0]==5423 and tcp_packet[2]>=2000 and tcp_packet[2]-2000<len(port_seq_dict) and port_seq_dict[tcp_packet[2]]==tcp_packet[1]):
 		
 
 		if not first_packet:
@@ -115,7 +115,7 @@ while True:
 				print "Successfull Knock"
 				break
 
-	elif(first_packet and tcp_packet[0]==5423 and port_seq_dict[tcp_packet[2]]!=tcp_packet[1] and srcip==srcip_packet):
+	elif(first_packet and tcp_packet[0]==5423 and srcip==srcip_packet):
 		first_packet=False
 		srcip="455.455.455.455"
 		sequence_dict={}
